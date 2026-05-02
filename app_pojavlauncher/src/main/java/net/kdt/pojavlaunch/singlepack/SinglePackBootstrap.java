@@ -137,9 +137,6 @@ public final class SinglePackBootstrap {
         conn.setConnectTimeout(CONNECT_MS);
         conn.setReadTimeout(READ_MS);
         conn.setRequestProperty("User-Agent", Tools.APP_NAME);
-        if (conn instanceof HttpsURLConnection) {
-            // defaults OK for normal HTTPS
-        }
         conn.connect();
         int code = conn.getResponseCode();
         if (code != HttpURLConnection.HTTP_OK) {
