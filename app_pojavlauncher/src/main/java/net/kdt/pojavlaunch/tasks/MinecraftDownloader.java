@@ -3,6 +3,7 @@ package net.kdt.pojavlaunch.tasks;
 import static net.kdt.pojavlaunch.PojavApplication.sExecutorService;
 
 import android.app.Activity;
+import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -55,6 +56,7 @@ public class MinecraftDownloader {
     private static final ThreadLocal<byte[]> sThreadLocalDownloadBuffer = new ThreadLocal<>();
 
     private boolean isLocalProfile = false;
+    private Context mAppContext;
 
     /**
      * Start the game version download process on the global executor service.
@@ -66,6 +68,7 @@ public class MinecraftDownloader {
     public void start(@Nullable Activity activity, @Nullable JMinecraftVersionList.Version version,
                       @NonNull String realVersion, // this was there for a reason
                       @NonNull AsyncMinecraftDownloader.DoneListener listener) {
+        mAppContext = activity != null ? activity.getApplicationContext() : null;
         if(activity != null){
             isLocalProfile = Tools.isLocalProfile(activity);
             Tools.switchDemo(Tools.isDemoProfile(activity));
@@ -516,8 +519,11 @@ public class MinecraftDownloader {
         }
         
         private void downloadFile() throws Exception {
-            if(isLocalProfile){
-                throw new RuntimeException("Download failed. Please make sure you are logged in with a Microsoft Account.");
+            if(isLocalProfile && !LauncherPreferences.PREF_ALLOW_LOCAL_PROFILE_DOWNLOADS){
+                String msg = mAppContext != null
+                        ? mAppContext.getString(R.string.exception_download_blocked_local_account)
+                        : "Download blocked for local/offline account. Sign in with Microsoft, or enable allowing downloads for local accounts in Settings > Miscellaneous.";
+                throw new RuntimeException(msg);
             }
 
             try {

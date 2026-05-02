@@ -355,6 +355,9 @@
     <string name="preference_download_source_description">Select a download mirror instead of using the official download server</string>
     <string name="preference_verify_manifest_title">Verify game version manifest</string>
     <string name="preference_verify_manifest_description">When enabled, the launcher will check the game version manifest along with the libraries.</string>
+    <string name="preference_allow_local_profile_downloads_title">Allow game downloads without Microsoft login</string>
+    <string name="preference_allow_local_profile_downloads_description">Lets the launcher download client files while using a local/offline account. Use with your own mirrors or redistributable JSON you host; you must comply with Mojang license terms.</string>
+    <string name="exception_download_blocked_local_account">Download blocked: you are using a local/offline account and game file downloads are turned off. Sign in with a Microsoft account, or enable the option in Settings → Miscellaneous: Allow game downloads without Microsoft login.</string>
     <string name="notif_download_finished">The game is ready to launch</string>
     <string name="notif_download_finished_desc">Click here to start it!</string>
     <string name="preference_category_gestures">Gestures</string>
