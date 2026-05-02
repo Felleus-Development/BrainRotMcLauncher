@@ -4,8 +4,10 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import net.kdt.pojavlaunch.BuildConfig;
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
+import net.kdt.pojavlaunch.singlepack.SinglePackBootstrap;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,6 +41,10 @@ public class LauncherProfiles {
         if(normalizeProfileIds(mainProfileJson)){
             write();
             load();
+            return;
+        }
+        if (BuildConfig.SINGLE_PACK_MODE) {
+            SinglePackBootstrap.enforceProfileIfEnabled();
         }
     }
 

@@ -6,6 +6,9 @@ import static net.kdt.pojavlaunch.Tools.shareLog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -16,6 +19,7 @@ import androidx.fragment.app.Fragment;
 
 import com.kdt.mcgui.mcVersionSpinner;
 
+import net.kdt.pojavlaunch.BuildConfig;
 import net.kdt.pojavlaunch.CustomControlsActivity;
 import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.Tools;
@@ -79,6 +83,27 @@ public class MainMenuFragment extends Fragment {
             Tools.swapFragment(requireActivity(), GamepadMapperFragment.class, GamepadMapperFragment.TAG, null);
             return true;
         });
+
+        if (BuildConfig.SINGLE_PACK_MODE) {
+            mVersionSpinner.setVisibility(View.GONE);
+            mEditProfileButton.setVisibility(View.GONE);
+            View installJar = view.findViewById(R.id.install_jar_button);
+            if (installJar != null) installJar.setVisibility(View.GONE);
+            View bg = view.findViewById(R.id._background_display_view);
+            if (bg != null) bg.setVisibility(View.GONE);
+
+            ConstraintLayout root = view.findViewById(R.id.fragment_menu_main);
+            View scroll = view.findViewById(R.id.main_menu_scroll);
+            View play = view.findViewById(R.id.play_button);
+            if (root != null && scroll != null && play != null) {
+                ConstraintSet cs = new ConstraintSet();
+                cs.clone(root);
+                cs.clear(scroll.getId(), ConstraintSet.BOTTOM);
+                int gap = (int) (8f * getResources().getDisplayMetrics().density);
+                cs.connect(scroll.getId(), ConstraintSet.BOTTOM, play.getId(), ConstraintSet.TOP, gap);
+                cs.applyTo(root);
+            }
+        }
     }
 
     private File getCurrentProfileDirectory() {

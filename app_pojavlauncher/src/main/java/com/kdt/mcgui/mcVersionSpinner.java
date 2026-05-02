@@ -21,6 +21,7 @@ import androidx.annotation.Nullable;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.FragmentActivity;
 
+import net.kdt.pojavlaunch.BuildConfig;
 import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.extra.ExtraConstants;
@@ -58,11 +59,7 @@ public class mcVersionSpinner extends ExtendedTextView {
     private Object mPopupAnimation;
     private int mSelectedIndex;
 
-    private final ProfileAdapter mProfileAdapter = new ProfileAdapter(new ProfileAdapterExtra[]{
-            new ProfileAdapterExtra(VERSION_SPINNER_PROFILE_CREATE,
-                    R.string.create_profile,
-                    ResourcesCompat.getDrawable(getResources(), R.drawable.ic_add, null)),
-    });
+    private final ProfileAdapter mProfileAdapter = new ProfileAdapter(profileAdapterExtras());
 
 
     /** Set the selection AND saves it as a shared preference */
@@ -92,6 +89,17 @@ public class mcVersionSpinner extends ExtendedTextView {
     /** Reload profiles from the file, forcing the spinner to consider the new data */
     public void reloadProfiles(){
         mProfileAdapter.reloadProfiles();
+    }
+
+    private ProfileAdapterExtra[] profileAdapterExtras() {
+        if (BuildConfig.SINGLE_PACK_MODE) {
+            return new ProfileAdapterExtra[0];
+        }
+        return new ProfileAdapterExtra[]{
+                new ProfileAdapterExtra(VERSION_SPINNER_PROFILE_CREATE,
+                        R.string.create_profile,
+                        ResourcesCompat.getDrawable(getResources(), R.drawable.ic_add, null)),
+        };
     }
 
     /** Initialize various behaviors */

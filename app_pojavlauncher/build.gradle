@@ -119,6 +119,12 @@ android {
         versionName getVersionName()
         multiDexEnabled true //important
         resValue 'string', 'curseforge_api_key', getCFApiKey()
+        // Single-pack fork: set SINGLE_PACK_MODE true, fill URL, version id, and bump content version when the ZIP changes.
+        buildConfigField "boolean", "SINGLE_PACK_MODE", "false"
+        buildConfigField "String", "SINGLE_PACK_ZIP_URL", '""'
+        buildConfigField "int", "SINGLE_PACK_CONTENT_VERSION", "1"
+        buildConfigField "String", "SINGLE_PACK_VERSION_ID", '"1.20.1"'
+        buildConfigField "String", "SINGLE_PACK_DISPLAY_NAME", '"Minecraft"'
     }
 
     buildTypes {

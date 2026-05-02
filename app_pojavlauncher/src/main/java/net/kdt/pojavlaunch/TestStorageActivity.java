@@ -14,7 +14,10 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import net.kdt.pojavlaunch.BuildConfig;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
+import net.kdt.pojavlaunch.singlepack.SinglePackBootstrap;
+import net.kdt.pojavlaunch.singlepack.SinglePackPrepareActivity;
 import net.kdt.pojavlaunch.tasks.AsyncAssetManager;
 
 public class TestStorageActivity extends Activity {
@@ -66,8 +69,11 @@ public class TestStorageActivity extends Activity {
         AsyncAssetManager.unpackComponents(this);
         AsyncAssetManager.unpackSingleFiles(this);
 
-        Intent intent =  new Intent(this, LauncherActivity.class);
-        startActivity(intent);
+        if (BuildConfig.SINGLE_PACK_MODE && SinglePackBootstrap.needsBootstrap()) {
+            startActivity(new Intent(this, SinglePackPrepareActivity.class));
+        } else {
+            startActivity(new Intent(this, LauncherActivity.class));
+        }
         finish();
     }
 }
