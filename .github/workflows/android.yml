@@ -27,11 +27,12 @@ jobs:
 
       - name: Get LTW
         run: |
-          apt update && apt install wget
+          sudo apt-get update && sudo apt-get install -y wget
           cd app_pojavlauncher/libs
-          wget https://github.com/PojavLauncherTeam/LTW/releases/latest/download/ltw-release.aar
+          wget -q https://github.com/PojavLauncherTeam/LTW/releases/latest/download/ltw-release.aar
 
-      - name: Get JRE17
+      - name: Get JRE17 from artifacts (with fallback)
+        id: get-jre17
         uses: dawidd6/action-download-artifact@v21
         with:
           workflow: build.yml
@@ -40,8 +41,11 @@ jobs:
           repo: AngelAuraMC/angelauramc-openjdk-build
           branch: buildjre17-21
           name: jre17-pojav
+          if_no_artifact_found: warn
+        continue-on-error: true
 
-      - name: Get JRE21
+      - name: Get JRE21 from artifacts (with fallback)
+        id: get-jre21
         uses: dawidd6/action-download-artifact@v21
         with:
           workflow: build.yml
@@ -50,6 +54,19 @@ jobs:
           repo: AngelAuraMC/angelauramc-openjdk-build
           branch: buildjre17-21
           name: jre21-pojav
+          if_no_artifact_found: warn
+        continue-on-error: true
+
+      - name: Download JREs from releases (fallback)
+        if: steps.get-jre17.outcome == 'failure' || steps.get-jre21.outcome == 'failure'
+        run: |
+          mkdir -p app_pojavlauncher/src/main/assets/components/jre-new
+          mkdir -p app_pojavlauncher/src/main/assets/components/jre-21
+          cd app_pojavlauncher/src/main/assets/components
+          wget -q -O jre-new/jre17.zip "https://github.com/AngelAuraMC/angelauramc-openjdk-build/releases/download/latest/jre17-pojav.zip" || echo "JRE17 release not found"
+          wget -q -O jre-21/jre21.zip "https://github.com/AngelAuraMC/angelauramc-openjdk-build/releases/download/latest/jre21-pojav.zip" || echo "JRE21 release not found"
+          unzip -q jre-new/jre17.zip -d jre-new/ 2>/dev/null || true
+          unzip -q jre-21/jre21.zip -d jre-21/ 2>/dev/null || true
 
       - uses: gradle/actions/setup-gradle@v6
         with:
