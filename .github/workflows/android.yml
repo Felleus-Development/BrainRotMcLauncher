@@ -25,14 +25,45 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y wget unzip
+
       - name: Get LTW
         run: |
-          sudo apt-get update && sudo apt-get install -y wget
           cd app_pojavlauncher/libs
           wget -q https://github.com/PojavLauncherTeam/LTW/releases/latest/download/ltw-release.aar
 
-      - name: Get JRE17 from artifacts (with fallback)
-        id: get-jre17
+      - name: Get JRE17
+        run: |
+          mkdir -p app_pojavlauncher/src/main/assets/components/jre-new
+          cd app_pojavlauncher/src/main/assets/components/jre-new
+          # Try to download from releases API (latest)
+          RELEASE_URL=$(wget -qO- "https://api.github.com/repos/AngelAuraMC/angelauramc-openjdk-build/releases/latest" | grep -o '"browser_download_url": "[^"]*jre17[^"]*\.zip"' | head -1 | sed 's/.*"browser_download_url": "\(.*\)"/\1/')
+          if [ -n "$RELEASE_URL" ]; then
+            echo "Downloading JRE17 from: $RELEASE_URL"
+            wget -q --timeout=60 -O jre17.zip "$RELEASE_URL" && unzip -q jre17.zip && rm jre17.zip && echo "JRE17 downloaded successfully"
+          else
+            echo "No JRE17 release found, will try artifact download"
+          fi
+        continue-on-error: true
+
+      - name: Get JRE21
+        run: |
+          mkdir -p app_pojavlauncher/src/main/assets/components/jre-21
+          cd app_pojavlauncher/src/main/assets/components/jre-21
+          # Try to download from releases API (latest)
+          RELEASE_URL=$(wget -qO- "https://api.github.com/repos/AngelAuraMC/angelauramc-openjdk-build/releases/latest" | grep -o '"browser_download_url": "[^"]*jre21[^"]*\.zip"' | head -1 | sed 's/.*"browser_download_url": "\(.*\)"/\1/')
+          if [ -n "$RELEASE_URL" ]; then
+            echo "Downloading JRE21 from: $RELEASE_URL"
+            wget -q --timeout=60 -O jre21.zip "$RELEASE_URL" && unzip -q jre21.zip && rm jre21.zip && echo "JRE21 downloaded successfully"
+          else
+            echo "No JRE21 release found, will try artifact download"
+          fi
+        continue-on-error: true
+
+      - name: Get JRE17 from artifacts (backup)
+        if: always()
         uses: dawidd6/action-download-artifact@v21
         with:
           workflow: build.yml
@@ -41,11 +72,11 @@ jobs:
           repo: AngelAuraMC/angelauramc-openjdk-build
           branch: buildjre17-21
           name: jre17-pojav
-          if_no_artifact_found: warn
+          if_no_artifact_found: ignore
         continue-on-error: true
 
-      - name: Get JRE21 from artifacts (with fallback)
-        id: get-jre21
+      - name: Get JRE21 from artifacts (backup)
+        if: always()
         uses: dawidd6/action-download-artifact@v21
         with:
           workflow: build.yml
@@ -54,19 +85,16 @@ jobs:
           repo: AngelAuraMC/angelauramc-openjdk-build
           branch: buildjre17-21
           name: jre21-pojav
-          if_no_artifact_found: warn
+          if_no_artifact_found: ignore
         continue-on-error: true
 
-      - name: Download JREs from releases (fallback)
-        if: steps.get-jre17.outcome == 'failure' || steps.get-jre21.outcome == 'failure'
+      - name: Verify JRE components
         run: |
-          mkdir -p app_pojavlauncher/src/main/assets/components/jre-new
-          mkdir -p app_pojavlauncher/src/main/assets/components/jre-21
-          cd app_pojavlauncher/src/main/assets/components
-          wget -q -O jre-new/jre17.zip "https://github.com/AngelAuraMC/angelauramc-openjdk-build/releases/download/latest/jre17-pojav.zip" || echo "JRE17 release not found"
-          wget -q -O jre-21/jre21.zip "https://github.com/AngelAuraMC/angelauramc-openjdk-build/releases/download/latest/jre21-pojav.zip" || echo "JRE21 release not found"
-          unzip -q jre-new/jre17.zip -d jre-new/ 2>/dev/null || true
-          unzip -q jre-21/jre21.zip -d jre-21/ 2>/dev/null || true
+          echo "=== Checking JRE components ==="
+          ls -la app_pojavlauncher/src/main/assets/components/ || echo "components dir not found"
+          ls -la app_pojavlauncher/src/main/assets/components/jre-new/ 2>/dev/null || echo "JRE17 dir empty/missing"
+          ls -la app_pojavlauncher/src/main/assets/components/jre-21/ 2>/dev/null || echo "JRE21 dir empty/missing"
+          echo "================================"
 
       - uses: gradle/actions/setup-gradle@v6
         with:
