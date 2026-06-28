@@ -1,5 +1,5 @@
 # Remove PojavLauncher account data
-PojavLauncher uses two types of accounts:
+PojavLauncher uses two types of accounts: 2
 - Local accounts
 - Microsoft accounts
 <br>
