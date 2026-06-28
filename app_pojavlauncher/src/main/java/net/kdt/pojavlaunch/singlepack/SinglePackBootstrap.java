@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 
 import net.kdt.pojavlaunch.BuildConfig;
 import net.kdt.pojavlaunch.Tools;
+import net.kdt.pojavlaunch.modloaders.modpacks.api.ModLoader;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.utils.ZipUtils;
 import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;
@@ -120,12 +121,24 @@ public final class SinglePackBootstrap {
             Log.w(TAG, "Could not delete temp zip: " + zipFile.getAbsolutePath());
         }
 
+        ensureModLoaderVersionJson();
+
         LauncherPreferences.DEFAULT_PREF.edit()
                 .putInt(SinglePackConstants.PREF_INSTALLED_CONTENT_VERSION, BuildConfig.SINGLE_PACK_CONTENT_VERSION)
                 .apply();
 
         LauncherProfiles.load();
         enforceProfileIfEnabled();
+    }
+
+    private static void ensureModLoaderVersionJson() throws IOException {
+        String versionId = BuildConfig.SINGLE_PACK_VERSION_ID;
+        if (versionId == null || versionId.isEmpty()) return;
+        File versionJson = new File(Tools.DIR_HOME_VERSION, versionId + File.separator + versionId + ".json");
+        if (versionJson.canRead()) return;
+        if (!ModLoader.ensureVersionJsonInstalled(versionId)) {
+            throw new IOException("Unsupported single-pack version: " + versionId);
+        }
     }
 
     private static void copyEmbeddedPackToFile(Context context, File destination) throws IOException {

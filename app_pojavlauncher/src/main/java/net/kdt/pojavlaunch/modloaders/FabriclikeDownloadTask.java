@@ -42,24 +42,27 @@ public class FabriclikeDownloadTask implements Runnable, Tools.DownloaderFeedbac
         ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);
     }
 
-    private boolean runCatching() throws IOException{
-        String fabricJson = DownloadUtils.downloadString(mUtils.createJsonDownloadUrl(mGameVersion, mLoaderVersion));
+    public static void installVersionJson(FabriclikeUtils utils, String gameVersion, String loaderVersion) throws IOException {
+        String fabricJson = DownloadUtils.downloadString(utils.createJsonDownloadUrl(gameVersion, loaderVersion));
         String versionId;
         try {
-            JSONObject fabricJsonObject = new JSONObject(fabricJson);
-            versionId = fabricJsonObject.getString("id");
-        }catch (JSONException e) {
-            e.printStackTrace();
-            return false;
+            versionId = new JSONObject(fabricJson).getString("id");
+        } catch (JSONException e) {
+            throw new IOException("Invalid mod loader version JSON", e);
         }
         File versionJsonDir = new File(Tools.DIR_HOME_VERSION, versionId);
-        File versionJsonFile = new File(versionJsonDir, versionId+".json");
+        File versionJsonFile = new File(versionJsonDir, versionId + ".json");
         FileUtils.ensureDirectory(versionJsonDir);
         Tools.write(versionJsonFile.getAbsolutePath(), fabricJson);
+    }
+
+    private boolean runCatching() throws IOException{
+        installVersionJson(mUtils, mGameVersion, mLoaderVersion);
         if(mCreateProfile) {
             LauncherProfiles.load();
             MinecraftProfile fabricProfile = new MinecraftProfile();
-            fabricProfile.lastVersionId = versionId;
+            String prefix = mUtils == FabriclikeUtils.QUILT_UTILS ? "quilt-loader-" : "fabric-loader-";
+            fabricProfile.lastVersionId = prefix + mLoaderVersion + "-" + mGameVersion;
             fabricProfile.name = mUtils.getName();
             fabricProfile.icon = mUtils.getIconName();
             LauncherProfiles.insertMinecraftProfile(fabricProfile);

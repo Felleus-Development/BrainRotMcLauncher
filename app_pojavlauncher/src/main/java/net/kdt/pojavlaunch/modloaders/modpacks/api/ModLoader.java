@@ -3,6 +3,8 @@ package net.kdt.pojavlaunch.modloaders.modpacks.api;
 import android.content.Context;
 import android.content.Intent;
 
+import androidx.annotation.Nullable;
+
 import net.kdt.pojavlaunch.JavaGUILauncherActivity;
 import net.kdt.pojavlaunch.modloaders.FabriclikeDownloadTask;
 import net.kdt.pojavlaunch.modloaders.FabriclikeUtils;
@@ -11,6 +13,7 @@ import net.kdt.pojavlaunch.modloaders.ForgeUtils;
 import net.kdt.pojavlaunch.modloaders.ModloaderDownloadListener;
 
 import java.io.File;
+import java.io.IOException;
 
 public class ModLoader {
     public static final int MOD_LOADER_FORGE = 0;
@@ -101,5 +104,58 @@ public class ModLoader {
 
     private FabriclikeDownloadTask createFabriclikeTask(ModloaderDownloadListener modloaderDownloadListener, FabriclikeUtils utils) {
         return new FabriclikeDownloadTask(modloaderDownloadListener, utils, minecraftVersion, modLoaderVersion, false);
+    }
+
+    @Nullable
+    public static ModLoader parseVersionId(String versionId) {
+        if (versionId == null) return null;
+        String[] fabriclikeParts = splitFabriclikeVersionId(versionId, "fabric-loader-");
+        if (fabriclikeParts != null) {
+            return new ModLoader(MOD_LOADER_FABRIC, fabriclikeParts[0], fabriclikeParts[1]);
+        }
+        fabriclikeParts = splitFabriclikeVersionId(versionId, "quilt-loader-");
+        if (fabriclikeParts != null) {
+            return new ModLoader(MOD_LOADER_QUILT, fabriclikeParts[0], fabriclikeParts[1]);
+        }
+        int forgeIndex = versionId.indexOf("-forge-");
+        if (forgeIndex > 0) {
+            return new ModLoader(
+                    MOD_LOADER_FORGE,
+                    versionId.substring(forgeIndex + "-forge-".length()),
+                    versionId.substring(0, forgeIndex)
+            );
+        }
+        return null;
+    }
+
+    public static boolean ensureVersionJsonInstalled(String versionId) throws IOException {
+        ModLoader modLoader = parseVersionId(versionId);
+        if (modLoader == null) return false;
+        switch (modLoader.modLoaderType) {
+            case MOD_LOADER_FABRIC:
+                FabriclikeDownloadTask.installVersionJson(
+                        FabriclikeUtils.FABRIC_UTILS, modLoader.minecraftVersion, modLoader.modLoaderVersion);
+                return true;
+            case MOD_LOADER_QUILT:
+                FabriclikeDownloadTask.installVersionJson(
+                        FabriclikeUtils.QUILT_UTILS, modLoader.minecraftVersion, modLoader.modLoaderVersion);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @Nullable
+    private static String[] splitFabriclikeVersionId(String versionId, String prefix) {
+        if (!versionId.startsWith(prefix)) return null;
+        String rest = versionId.substring(prefix.length());
+        for (int i = rest.length() - 1; i >= 0; i--) {
+            if (rest.charAt(i) != '-') continue;
+            String minecraftVersion = rest.substring(i + 1);
+            if (minecraftVersion.matches("\\d+\\.\\d+.*")) {
+                return new String[]{rest.substring(0, i), minecraftVersion};
+            }
+        }
+        return null;
     }
 }
