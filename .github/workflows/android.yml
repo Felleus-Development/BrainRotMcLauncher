@@ -32,7 +32,10 @@ jobs:
           wget https://github.com/PojavLauncherTeam/LTW/releases/latest/download/ltw-release.aar
 
       - name: Get JRE21
+        if: hashFiles('app_pojavlauncher/src/main/assets/components/jre-21/version') == ''
         uses: dawidd6/action-download-artifact@v21
+        continue-on-error: true
+        id: get_jre21
         with:
           workflow: build.yml
           path: app_pojavlauncher/src/main/assets/components/jre-21
@@ -40,6 +43,18 @@ jobs:
           repo: AngelAuraMC/angelauramc-openjdk-build
           branch: buildjre17-21
           name: jre21-pojav
+
+      - name: Verify JRE21
+        run: |
+          if [ -f app_pojavlauncher/src/main/assets/components/jre-21/version ]; then
+            echo "JRE21 ready (vendored or downloaded)."
+            exit 0
+          fi
+          echo "::error::JRE21 missing. GitHub Actions artifacts expire after 90 days."
+          echo "Fix (pick one):"
+          echo "  1) Re-run https://github.com/AngelAuraMC/angelauramc-openjdk-build/actions (branch buildjre17-21, ~3h), then re-run this workflow."
+          echo "  2) Download jre21-pojav from a successful run Artifacts section, unzip into app_pojavlauncher/src/main/assets/components/jre-21/ and commit."
+          exit 1
 
       - uses: gradle/actions/setup-gradle@v6
         with:
