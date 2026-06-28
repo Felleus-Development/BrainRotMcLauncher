@@ -121,7 +121,7 @@ android {
         resValue 'string', 'curseforge_api_key', getCFApiKey()
         buildConfigField "boolean", "SINGLE_PACK_MODE", "true"
         buildConfigField "String", "SINGLE_PACK_ZIP_URL", '""'
-        buildConfigField "int", "SINGLE_PACK_CONTENT_VERSION", "2"
+        buildConfigField "int", "SINGLE_PACK_CONTENT_VERSION", "3"
         buildConfigField "String", "SINGLE_PACK_VERSION_ID", '"fabric-loader-0.19.2-1.20.6"'
         buildConfigField "String", "SINGLE_PACK_DISPLAY_NAME", '"BrainRotsMc"'
     }
@@ -206,14 +206,27 @@ def embeddedPackAssetDir = file('src/main/assets/single_pack')
 
 tasks.register('packEmbeddedGameZip', Zip) {
     group = 'build'
-    description = 'Zip pack/ into assets/single_pack/content.zip for offline single-pack installs'
-    onlyIf { embeddedPackDir.isDirectory() }
-    from embeddedPackDir
+    description = 'Zip pack/ (or the contents of pack/content.zip) into assets/single_pack/content.zip'
+    onlyIf {
+        embeddedPackDir.isDirectory() && (
+                new File(embeddedPackDir, 'mods').isDirectory()
+                        || new File(embeddedPackDir, 'content.zip').isFile()
+        )
+    }
     archiveFileName = 'content.zip'
     destinationDirectory = embeddedPackAssetDir
     doFirst {
         embeddedPackAssetDir.mkdirs()
     }
+    from({
+        def nestedPack = new File(embeddedPackDir, 'content.zip')
+        if (nestedPack.isFile() && !new File(embeddedPackDir, 'mods').isDirectory()) {
+            return zipTree(nestedPack)
+        }
+        return fileTree(embeddedPackDir) {
+            exclude 'content.zip'
+        }
+    })
 }
 
 afterEvaluate {

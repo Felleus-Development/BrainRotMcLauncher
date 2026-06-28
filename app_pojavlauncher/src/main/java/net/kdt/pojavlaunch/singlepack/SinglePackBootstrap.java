@@ -163,6 +163,23 @@ public final class SinglePackBootstrap {
         try (java.util.zip.ZipFile zf = new java.util.zip.ZipFile(zipFile)) {
             ZipUtils.zipExtract(zf, "", instanceRoot);
         }
+
+        File nestedZip = new File(instanceRoot, "content.zip");
+        if (nestedZip.isFile() && !new File(instanceRoot, "mods").isDirectory()) {
+            Log.i(TAG, "Unpacking nested content.zip from single-pack asset");
+            File staging = new File(Tools.DIR_CACHE, "single_pack_nested");
+            if (staging.exists()) {
+                FileUtils.deleteDirectory(staging);
+            }
+            net.kdt.pojavlaunch.utils.FileUtils.ensureDirectory(staging);
+            try (java.util.zip.ZipFile nested = new java.util.zip.ZipFile(nestedZip)) {
+                ZipUtils.zipExtract(nested, "", staging);
+            }
+            FileUtils.deleteDirectory(instanceRoot);
+            if (!staging.renameTo(instanceRoot)) {
+                FileUtils.moveDirectory(staging, instanceRoot);
+            }
+        }
     }
 
     private static void downloadLargeFile(String urlString, File destination) throws IOException {
