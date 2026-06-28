@@ -25,76 +25,21 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update && sudo apt-get install -y wget unzip
-
       - name: Get LTW
         run: |
+          apt update && apt install wget
           cd app_pojavlauncher/libs
-          wget -q https://github.com/PojavLauncherTeam/LTW/releases/latest/download/ltw-release.aar
-
-      - name: Get JRE17
-        run: |
-          mkdir -p app_pojavlauncher/src/main/assets/components/jre-new
-          cd app_pojavlauncher/src/main/assets/components/jre-new
-          # Try to download from releases API (latest)
-          RELEASE_URL=$(wget -qO- "https://api.github.com/repos/AngelAuraMC/angelauramc-openjdk-build/releases/latest" | grep -o '"browser_download_url": "[^"]*jre17[^"]*\.zip"' | head -1 | sed 's/.*"browser_download_url": "\(.*\)"/\1/')
-          if [ -n "$RELEASE_URL" ]; then
-            echo "Downloading JRE17 from: $RELEASE_URL"
-            wget -q --timeout=60 -O jre17.zip "$RELEASE_URL" && unzip -q jre17.zip && rm jre17.zip && echo "JRE17 downloaded successfully"
-          else
-            echo "No JRE17 release found, will try artifact download"
-          fi
-        continue-on-error: true
+          wget https://github.com/PojavLauncherTeam/LTW/releases/latest/download/ltw-release.aar
 
       - name: Get JRE21
-        run: |
-          mkdir -p app_pojavlauncher/src/main/assets/components/jre-21
-          cd app_pojavlauncher/src/main/assets/components/jre-21
-          # Try to download from releases API (latest)
-          RELEASE_URL=$(wget -qO- "https://api.github.com/repos/AngelAuraMC/angelauramc-openjdk-build/releases/latest" | grep -o '"browser_download_url": "[^"]*jre21[^"]*\.zip"' | head -1 | sed 's/.*"browser_download_url": "\(.*\)"/\1/')
-          if [ -n "$RELEASE_URL" ]; then
-            echo "Downloading JRE21 from: $RELEASE_URL"
-            wget -q --timeout=60 -O jre21.zip "$RELEASE_URL" && unzip -q jre21.zip && rm jre21.zip && echo "JRE21 downloaded successfully"
-          else
-            echo "No JRE21 release found, will try artifact download"
-          fi
-        continue-on-error: true
-
-      - name: Get JRE17 from artifacts (backup)
-        if: always()
-        uses: dawidd6/action-download-artifact@v21
-        with:
-          workflow: build.yml
-          path: app_pojavlauncher/src/main/assets/components/jre-new
-          workflow_conclusion: completed
-          repo: AngelAuraMC/angelauramc-openjdk-build
-          branch: buildjre17-21
-          name: jre17-pojav
-          if_no_artifact_found: ignore
-        continue-on-error: true
-
-      - name: Get JRE21 from artifacts (backup)
-        if: always()
         uses: dawidd6/action-download-artifact@v21
         with:
           workflow: build.yml
           path: app_pojavlauncher/src/main/assets/components/jre-21
-          workflow_conclusion: completed
+          workflow_conclusion: success
           repo: AngelAuraMC/angelauramc-openjdk-build
           branch: buildjre17-21
           name: jre21-pojav
-          if_no_artifact_found: ignore
-        continue-on-error: true
-
-      - name: Verify JRE components
-        run: |
-          echo "=== Checking JRE components ==="
-          ls -la app_pojavlauncher/src/main/assets/components/ || echo "components dir not found"
-          ls -la app_pojavlauncher/src/main/assets/components/jre-new/ 2>/dev/null || echo "JRE17 dir empty/missing"
-          ls -la app_pojavlauncher/src/main/assets/components/jre-21/ 2>/dev/null || echo "JRE21 dir empty/missing"
-          echo "================================"
 
       - uses: gradle/actions/setup-gradle@v6
         with:
@@ -122,8 +67,6 @@ jobs:
 
       - name: Build APK without runtime
         run: |
-          rm -rf app_pojavlauncher/src/main/assets/components/jre
-          rm -rf app_pojavlauncher/src/main/assets/components/jre-new
           rm -rf app_pojavlauncher/src/main/assets/components/jre-21
           gradle assembleDebug
           mv app_pojavlauncher/build/outputs/apk/debug/app_pojavlauncher-debug.apk out/BrainRotsMc-noruntime.apk

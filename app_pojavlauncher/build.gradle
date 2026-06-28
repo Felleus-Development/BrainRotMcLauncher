@@ -119,12 +119,11 @@ android {
         versionName getVersionName()
         multiDexEnabled true //important
         resValue 'string', 'curseforge_api_key', getCFApiKey()
-        // Single-pack fork: set SINGLE_PACK_MODE true, fill URL, version id, and bump content version when the ZIP changes.
-        buildConfigField "boolean", "SINGLE_PACK_MODE", "false"
+        buildConfigField "boolean", "SINGLE_PACK_MODE", "true"
         buildConfigField "String", "SINGLE_PACK_ZIP_URL", '""'
-        buildConfigField "int", "SINGLE_PACK_CONTENT_VERSION", "1"
-        buildConfigField "String", "SINGLE_PACK_VERSION_ID", '"1.20.1"'
-        buildConfigField "String", "SINGLE_PACK_DISPLAY_NAME", '"Minecraft"'
+        buildConfigField "int", "SINGLE_PACK_CONTENT_VERSION", "2"
+        buildConfigField "String", "SINGLE_PACK_VERSION_ID", '"fabric-loader-0.19.2-1.20.6"'
+        buildConfigField "String", "SINGLE_PACK_DISPLAY_NAME", '"BrainRotsMc"'
     }
 
     buildTypes {
@@ -195,12 +194,33 @@ android {
         buildConfig true
     }
 
+    androidResources {
+        noCompress 'zip'
+    }
+
     buildToolsVersion = '34.0.0'
 }
 
+def embeddedPackDir = rootProject.file('pack')
+def embeddedPackAssetDir = file('src/main/assets/single_pack')
+
+tasks.register('packEmbeddedGameZip', Zip) {
+    group = 'build'
+    description = 'Zip pack/ into assets/single_pack/content.zip for offline single-pack installs'
+    onlyIf { embeddedPackDir.isDirectory() }
+    from embeddedPackDir
+    archiveFileName = 'content.zip'
+    destinationDirectory = embeddedPackAssetDir
+    doFirst {
+        embeddedPackAssetDir.mkdirs()
+    }
+}
+
 afterEvaluate {
-    // Explicit dependencies for which the apk relies on
-    tasks.mergeDebugAssets.dependsOn(":forge_installer:jar", ":arc_dns_injector:jar", ":jre_lwjgl3glfw:jar")
+    tasks.mergeDebugAssets.dependsOn(":forge_installer:jar", ":arc_dns_injector:jar", ":jre_lwjgl3glfw:jar", "packEmbeddedGameZip")
+    tasks.matching { it.name.startsWith('merge') && it.name.endsWith('Assets') && it.name != 'mergeDebugAssets' }.configureEach {
+        dependsOn("packEmbeddedGameZip")
+    }
 }
 
 dependencies {

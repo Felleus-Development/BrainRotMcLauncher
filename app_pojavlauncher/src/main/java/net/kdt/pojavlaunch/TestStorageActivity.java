@@ -69,7 +69,7 @@ public class TestStorageActivity extends Activity {
         AsyncAssetManager.unpackComponents(this);
         AsyncAssetManager.unpackSingleFiles(this);
 
-        if (BuildConfig.SINGLE_PACK_MODE && SinglePackBootstrap.needsBootstrap()) {
+        if (BuildConfig.SINGLE_PACK_MODE && SinglePackBootstrap.needsBootstrap(this)) {
             startActivity(new Intent(this, SinglePackPrepareActivity.class));
         } else {
             startActivity(new Intent(this, LauncherActivity.class));

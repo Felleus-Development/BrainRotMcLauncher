@@ -1,5 +1,7 @@
 package net.kdt.pojavlaunch.singlepack;
 
+import android.content.Context;
+import android.content.res.AssetManager;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -15,15 +17,14 @@ import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftProfile;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Objects;
 
-/**
- * Fork helper: one fixed profile, optional download + unzip of a server-hosted pack.
- */
 public final class SinglePackBootstrap {
     private static final String TAG = "SinglePackBootstrap";
     private static final int CONNECT_MS = 30_000;
@@ -35,9 +36,6 @@ public final class SinglePackBootstrap {
         return BuildConfig.SINGLE_PACK_MODE;
     }
 
-    /**
-     * Called at the end of {@link net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles#load()}.
-     */
     public static void enforceProfileIfEnabled() {
         if (!BuildConfig.SINGLE_PACK_MODE) return;
 
@@ -73,16 +71,24 @@ public final class SinglePackBootstrap {
         }
     }
 
-    /**
-     * Whether we must download/extract before opening the main launcher (first run or pack update).
-     */
-    public static boolean needsBootstrap() {
+    public static boolean hasEmbeddedPack(@NonNull Context context) {
         if (!BuildConfig.SINGLE_PACK_MODE) return false;
-        String url = BuildConfig.SINGLE_PACK_ZIP_URL == null ? "" : BuildConfig.SINGLE_PACK_ZIP_URL.trim();
-        if (url.isEmpty()) {
-            Log.w(TAG, "SINGLE_PACK_MODE is true but SINGLE_PACK_ZIP_URL is empty — skipping download.");
+        AssetManager assets = context.getAssets();
+        try (InputStream in = assets.open(SinglePackConstants.EMBEDDED_PACK_ASSET)) {
+            return in != null;
+        } catch (IOException e) {
             return false;
         }
+    }
+
+    public static boolean hasRemotePack() {
+        String url = BuildConfig.SINGLE_PACK_ZIP_URL == null ? "" : BuildConfig.SINGLE_PACK_ZIP_URL.trim();
+        return !url.isEmpty();
+    }
+
+    public static boolean needsBootstrap(@NonNull Context context) {
+        if (!BuildConfig.SINGLE_PACK_MODE) return false;
+        if (!hasEmbeddedPack(context) && !hasRemotePack()) return false;
 
         int installed = LauncherPreferences.DEFAULT_PREF.getInt(SinglePackConstants.PREF_INSTALLED_CONTENT_VERSION, 0);
         if (installed < BuildConfig.SINGLE_PACK_CONTENT_VERSION) return true;
@@ -97,29 +103,19 @@ public final class SinglePackBootstrap {
         return new File(Tools.DIR_GAME_HOME, SinglePackConstants.RELATIVE_GAME_DIR.replaceFirst("^\\./", ""));
     }
 
-    /**
-     * Download ZIP from {@link BuildConfig#SINGLE_PACK_ZIP_URL}, replace instance dir, bump pref version, enforce profile.
-     */
-    public static void downloadAndInstall() throws IOException {
+    public static void installPack(@NonNull Context context) throws IOException {
         if (!BuildConfig.SINGLE_PACK_MODE) return;
 
-        String url = BuildConfig.SINGLE_PACK_ZIP_URL == null ? "" : BuildConfig.SINGLE_PACK_ZIP_URL.trim();
-        if (url.isEmpty()) {
-            throw new IOException("SINGLE_PACK_ZIP_URL is not set");
-        }
-
         File zipFile = new File(Tools.DIR_CACHE, "single_pack_import.zip");
-        downloadLargeFile(url, zipFile);
-
-        File instanceRoot = getInstanceRoot();
-        if (instanceRoot.exists()) {
-            FileUtils.deleteDirectory(instanceRoot);
+        if (hasEmbeddedPack(context)) {
+            copyEmbeddedPackToFile(context, zipFile);
+        } else if (hasRemotePack()) {
+            downloadLargeFile(BuildConfig.SINGLE_PACK_ZIP_URL.trim(), zipFile);
+        } else {
+            throw new IOException("No embedded or remote pack configured");
         }
-        net.kdt.pojavlaunch.utils.FileUtils.ensureDirectory(instanceRoot);
 
-        try (java.util.zip.ZipFile zf = new java.util.zip.ZipFile(zipFile)) {
-            ZipUtils.zipExtract(zf, "", instanceRoot);
-        }
+        extractPackZip(zipFile);
         if (!zipFile.delete()) {
             Log.w(TAG, "Could not delete temp zip: " + zipFile.getAbsolutePath());
         }
@@ -130,6 +126,30 @@ public final class SinglePackBootstrap {
 
         LauncherProfiles.load();
         enforceProfileIfEnabled();
+    }
+
+    private static void copyEmbeddedPackToFile(Context context, File destination) throws IOException {
+        net.kdt.pojavlaunch.utils.FileUtils.ensureParentDirectory(destination);
+        try (InputStream in = context.getAssets().open(SinglePackConstants.EMBEDDED_PACK_ASSET);
+             FileOutputStream out = new FileOutputStream(destination)) {
+            byte[] buf = new byte[65536];
+            int n;
+            while ((n = in.read(buf)) != -1) {
+                out.write(buf, 0, n);
+            }
+        }
+    }
+
+    private static void extractPackZip(File zipFile) throws IOException {
+        File instanceRoot = getInstanceRoot();
+        if (instanceRoot.exists()) {
+            FileUtils.deleteDirectory(instanceRoot);
+        }
+        net.kdt.pojavlaunch.utils.FileUtils.ensureDirectory(instanceRoot);
+
+        try (java.util.zip.ZipFile zf = new java.util.zip.ZipFile(zipFile)) {
+            ZipUtils.zipExtract(zf, "", instanceRoot);
+        }
     }
 
     private static void downloadLargeFile(String urlString, File destination) throws IOException {
@@ -143,8 +163,8 @@ public final class SinglePackBootstrap {
             conn.disconnect();
             throw new IOException("HTTP " + code + " when downloading pack");
         }
-        try (java.io.InputStream in = conn.getInputStream();
-             java.io.FileOutputStream out = new java.io.FileOutputStream(destination)) {
+        try (InputStream in = conn.getInputStream();
+             FileOutputStream out = new FileOutputStream(destination)) {
             byte[] buf = new byte[65536];
             int n;
             while ((n = in.read(buf)) != -1) {

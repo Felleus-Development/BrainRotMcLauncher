@@ -13,4 +13,6 @@ public final class SinglePackConstants {
     public static final String RELATIVE_GAME_DIR = "./custom_instances/single_pack";
 
     public static final String PREF_INSTALLED_CONTENT_VERSION = "singlePackContentVersion";
+
+    public static final String EMBEDDED_PACK_ASSET = "single_pack/content.zip";
 }

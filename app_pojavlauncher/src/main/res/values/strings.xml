@@ -435,6 +435,7 @@
     <string name="newdl_extracting_native_libraries">Extracting native libraries (%d/%d)</string>
     <string name="toast_not_available_demo">This is not available in demo mode</string>
     <string name="single_pack_downloading">Downloading game pack…</string>
+    <string name="single_pack_extracting">Installing game pack…</string>
     <string name="single_pack_error_title">Download failed</string>
     <string name="single_pack_error_message">Could not download or install the pack.\n\n%1$s</string>
     <string name="single_pack_retry">Retry</string>

@@ -23,11 +23,13 @@ public class SinglePackPrepareActivity extends AppCompatActivity {
         setContentView(R.layout.activity_single_pack_prepare);
 
         TextView status = findViewById(R.id.single_pack_status_text);
-        status.setText(R.string.single_pack_downloading);
+        status.setText(SinglePackBootstrap.hasEmbeddedPack(this)
+                ? R.string.single_pack_extracting
+                : R.string.single_pack_downloading);
 
         PojavApplication.sExecutorService.execute(() -> {
             try {
-                SinglePackBootstrap.downloadAndInstall();
+                SinglePackBootstrap.installPack(SinglePackPrepareActivity.this);
                 runOnUiThread(() -> {
                     startActivity(new Intent(this, LauncherActivity.class));
                     finish();
