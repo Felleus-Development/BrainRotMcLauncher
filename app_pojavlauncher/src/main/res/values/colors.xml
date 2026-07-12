@@ -4,6 +4,9 @@
     <color name="control_button_pressed_color">#4D000000</color>
 
     <color name="minebutton_color">#57CC33</color>
+    <color name="play_button_color_light">#FFE44D</color>
+    <color name="play_button_color">#FFCC00</color>
+    <color name="play_button_color_pressed">#E6B800</color>
     <color name="background_app">#181818</color>
     <color name="divider">@color/background_overlay</color>
     <color name="background_overlay">#464646</color>
